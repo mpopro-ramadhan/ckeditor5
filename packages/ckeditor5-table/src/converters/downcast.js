@@ -58,13 +58,15 @@ export function downcastInsertTable( options = {} ) {
 			const { row, cell } = tableSlot;
 
 			const tableRow = table.getChild( row );
-			const trElement = viewRows.get( row ) || createTr( tableElement, tableRow, row, tableAttributes, conversionApi );
-			viewRows.set( row, trElement );
 
 			// Ignore caption models.
+			// FIXME: This shouldn't be hardcoded.
 			if ( tableRow.name === 'caption' ) {
 				continue;
 			}
+
+			const trElement = viewRows.get( row ) || createTr( tableElement, tableRow, row, tableAttributes, conversionApi );
+			viewRows.set( row, trElement );
 
 			// Consume table cell - it will be always consumed as we convert whole table at once.
 			conversionApi.consumable.consume( cell, 'insert' );
@@ -78,6 +80,11 @@ export function downcastInsertTable( options = {} ) {
 		// this can happen only in the document fragment that only part of the table is down-casted.
 		for ( const tableRow of table.getChildren() ) {
 			const rowIndex = tableRow.index;
+
+			// FIXME: This shouldn't be hardcoded.
+			if ( tableRow.name == 'caption' ) {
+				continue;
+			}
 
 			if ( !viewRows.has( rowIndex ) ) {
 				viewRows.set( rowIndex, createTr( tableElement, tableRow, rowIndex, tableAttributes, conversionApi ) );

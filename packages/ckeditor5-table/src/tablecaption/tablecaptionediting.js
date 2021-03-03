@@ -84,8 +84,24 @@ export default class TableCaptionEditing extends Plugin {
 			}
 		} );
 
-		editor.editing.mapper.on( 'modelToViewPosition', mapModelPositionToView( view ) );
 		editor.data.mapper.on( 'modelToViewPosition', mapModelPositionToView( view ) );
+		editor.editing.mapper.on( 'modelToViewPosition', mapModelPositionToView( view ) );
+
+		editor.editing.mapper.on( 'modelToViewPosition',
+			( evt, data ) => {
+				const modelPosition = data.modelPosition;
+				const parent = modelPosition.parent;
+
+				if ( !parent.is( 'element', 'caption' ) ) {
+					return;
+				}
+
+				// Place the caption's content next to the table.
+				const viewContainer = data.mapper.toViewElement( parent.parent );
+
+				data.viewPosition = data.mapper.findPositionIn( viewContainer, modelPosition.offset );
+			}
+		);
 	}
 }
 
