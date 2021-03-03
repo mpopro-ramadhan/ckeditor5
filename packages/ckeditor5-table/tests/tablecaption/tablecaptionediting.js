@@ -45,18 +45,18 @@ describe.only( 'TableCaptionEditing', () => {
 	} );
 
 	describe( 'conversion in data pipeline', () => {
-		describe( 'model to view', () => {
+		describe.only( 'model to view', () => {
 			it( 'should convert to figure > figcaption + table', () => {
 				setModelData( model,
 					'<table>' +
-						'<caption>' +
-							'Foo caption' +
-						'</caption>' +
 						'<tableRow>' +
 							'<tableCell>' +
 								'<paragraph>foobar</paragraph>' +
 							'</tableCell>' +
 						'</tableRow>' +
+						'<caption>' +
+							'Foo caption' +
+						'</caption>' +
 					'</table>'
 				);
 

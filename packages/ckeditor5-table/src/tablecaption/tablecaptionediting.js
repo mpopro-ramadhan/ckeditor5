@@ -72,55 +72,17 @@ export default class TableCaptionEditing extends Plugin {
 				}
 
 				const figcaptionElement = writer.createEditableElement( 'figcaption' );
-				writer.setCustomProperty( 'imageCaption', true, figcaptionElement );
 
 				enablePlaceholder( {
 					view,
 					element: figcaptionElement,
-					text: t( 'Enter image caption' )
+					text: t( 'Enter table caption' )
 				} );
 
 				return toWidgetEditable( figcaptionElement, writer );
 			}
 		} );
-
-		editor.data.mapper.on( 'modelToViewPosition', mapModelPositionToView( view ) );
-		editor.editing.mapper.on( 'modelToViewPosition', mapModelPositionToView( view ) );
-
-		editor.editing.mapper.on( 'modelToViewPosition',
-			( evt, data ) => {
-				const modelPosition = data.modelPosition;
-				const parent = modelPosition.parent;
-
-				if ( !parent.is( 'element', 'caption' ) ) {
-					return;
-				}
-
-				// Place the caption's content next to the table.
-				const viewContainer = data.mapper.toViewElement( parent.parent );
-
-				data.viewPosition = data.mapper.findPositionIn( viewContainer, modelPosition.offset );
-			}
-		);
 	}
-}
-
-// @private
-// @param {module:engine/view/view~View} editingView
-// @returns {Function}
-function mapModelPositionToView( editingView ) {
-	return ( evt, data ) => {
-		const modelPosition = data.modelPosition;
-		const parent = modelPosition.parent;
-
-		if ( !parent.is( 'element', 'table' ) ) {
-			return;
-		}
-
-		const viewElement = data.mapper.toViewElement( parent );
-
-		data.viewPosition = editingView.createPositionAt( viewElement, modelPosition.offset + 1 );
-	};
 }
 
 /**
