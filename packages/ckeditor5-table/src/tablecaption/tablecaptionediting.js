@@ -45,11 +45,12 @@ export default class TableCaptionEditing extends Plugin {
 
 		// View -> model converter for the data pipeline.
 		editor.conversion.for( 'upcast' )
-			.elementToElement( {
-				view: matchTableCaptionViewElement,
-				model: 'caption'
-			} )
-			.add( viewFigureToModel() );
+			// .elementToElement( {
+			// 	view: matchTableCaptionViewElement,
+			// 	model: 'caption'
+			// } )
+			.add( viewFigureToModel() )
+			.add( viewCaptionToModel() );
 
 		// Model -> view converter for the data pipeline.
 		editor.conversion.for( 'dataDowncast' ).elementToElement( {
@@ -119,39 +120,64 @@ export function isTable( modelElement ) {
 
 export function viewFigureToModel() {
 	return dispatcher => {
-		dispatcher.on( 'element:figure', converter );
+		dispatcher.on( 'element:figure', ( evt, data, conversionApi ) => {
+			// Do not convert if this is not an "table figure".
+			if ( !conversionApi.consumable.test( data.viewItem, { name: true, classes: 'table' } ) ) {
+				return;
+			}
+
+			// Find an table element inside the figure element.
+			const viewTable = getViewTableFromFigure( data.viewItem );
+
+			// Do not convert if table element is absent, is missing src attribute or was already converted.
+			if ( !viewTable || !conversionApi.consumable.test( viewTable, { name: true } ) ) {
+				return;
+			}
+
+			// Convert view table to model table.
+			const conversionResult = conversionApi.convertItem( viewTable, data.modelCursor );
+
+			// Get table element from conversion result.
+			const modelTable = first( conversionResult.modelRange.getItems() );
+
+			// When table wasn't successfully converted then finish conversion.
+			if ( !modelTable ) {
+				return;
+			}
+
+			// Convert rest of the figure element's children as an table children.
+			conversionApi.convertChildren( data.viewItem, modelTable );
+
+			conversionApi.updateConversionResult( modelTable, data );
+		} );
 	};
+}
 
-	function converter( evt, data, conversionApi ) {
-		// Do not convert if this is not an "table figure".
-		if ( !conversionApi.consumable.test( data.viewItem, { name: true, classes: 'table' } ) ) {
-			return;
-		}
+export function viewCaptionToModel() {
+	return dispatcher => {
+		dispatcher.on( 'element:caption', ( evt, data, { writer, mapper } ) => {
+			const viewItem = data.viewItem;
+			const parent = viewItem.parent;
 
-		// Find an table element inside the figure element.
-		const viewTable = getViewTableFromFigure( data.viewItem );
+			if ( parent.name !== 'table' ) {
+				return;
+			}
 
-		// Do not convert if table element is absent, is missing src attribute or was already converted.
-		if ( !viewTable || !conversionApi.consumable.test( viewTable, { name: true } ) ) {
-			return;
-		}
+			const position = data.modelCursor;
 
-		// Convert view table to model table.
-		const conversionResult = conversionApi.convertItem( viewTable, data.modelCursor );
+			const modelElement = writer.createElement( 'caption' );
+			const atTheEnd = writer.createPositionAfter( position );
 
-		// Get table element from conversion result.
-		const modelTable = first( conversionResult.modelRange.getItems() );
+			writer.insert( atTheEnd, modelElement );
+			mapper.bindElements( modelElement, viewItem );
+		} );
+	};
+}
 
-		// When table wasn't successfully converted then finish conversion.
-		if ( !modelTable ) {
-			return;
-		}
+export function last( iterable ) {
+	const items = Array.from( iterable );
 
-		// Convert rest of the figure element's children as an table children.
-		conversionApi.convertChildren( data.viewItem, modelTable );
-
-		conversionApi.updateConversionResult( modelTable, data );
-	}
+	return items[ items.length - 1 ];
 }
 
 export function getViewTableFromFigure( figureView ) {
