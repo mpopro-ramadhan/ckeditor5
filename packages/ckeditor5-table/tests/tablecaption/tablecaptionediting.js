@@ -78,7 +78,7 @@ describe.only( 'TableCaptionEditing', () => {
 		} );
 
 		describe( 'view to model', () => {
-			it.only( 'should convert a table with <caption>', () => {
+			it( 'should convert a table with <caption>', () => {
 				editor.setData(
 					'<table>' +
 						'<caption>Foo caption</caption>' +

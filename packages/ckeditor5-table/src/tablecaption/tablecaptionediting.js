@@ -37,34 +37,41 @@ export default class TableCaptionEditing extends Plugin {
 		const view = editor.editing.view;
 		const t = editor.t;
 
-		schema.register( 'caption', {
-			allowIn: 'table',
-			allowContentOf: '$block',
-			isLimit: true
-		} );
+		if ( !schema.isRegistered( 'caption' ) ) {
+			schema.register( 'caption', {
+				allowIn: 'table',
+				allowContentOf: '$block',
+				isLimit: true
+			} );
+		} else {
+			schema.extend( 'caption', {
+				allowIn: 'table'
+			} );
+		}
 
 		// View -> model converter for the data pipeline.
 		editor.conversion.for( 'upcast' )
-			// .elementToElement( {
-			// 	view: matchTableCaptionViewElement,
-			// 	model: 'caption'
-			// } )
-			.add( viewFigureToModel() )
-			.add( viewCaptionToModel() );
+			.elementToElement( {
+				view: matchTableCaptionViewElement,
+				model: 'caption'
+			} )
+			.add( viewFigureToModel() );
 
 		// Model -> view converter for the data pipeline.
-		editor.conversion.for( 'dataDowncast' ).elementToElement( {
-			model: 'caption',
-			view: ( modelElement, { writer } ) => {
-				if ( !isTable( modelElement.parent ) ) {
-					return null;
-				}
 
-				return writer.createContainerElement( 'figcaption' );
-			}
-		} );
+		// editor.conversion.for( 'dataDowncast' ).elementToElement( {
+		// 	model: 'caption',
+		// 	view: ( modelElement, { writer } ) => {
+		// 		if ( !isTable( modelElement.parent ) ) {
+		// 			return null;
+		// 		}
+
+		// 		return writer.createContainerElement( 'figcaption' );
+		// 	}
+		// } );
 
 		// Model -> view converter for the editing pipeline.
+
 		editor.conversion.for( 'editingDowncast' ).elementToElement( {
 			model: 'caption',
 			view: ( modelElement, { writer } ) => {
@@ -73,6 +80,7 @@ export default class TableCaptionEditing extends Plugin {
 				}
 
 				const figcaptionElement = writer.createEditableElement( 'figcaption' );
+				writer.setCustomProperty( 'tableCaption', true, figcaptionElement );
 
 				enablePlaceholder( {
 					view,
@@ -118,6 +126,7 @@ export function isTable( modelElement ) {
 	return !!modelElement && modelElement.is( 'element', 'table' );
 }
 
+// TODO: Move to tableediting.
 export function viewFigureToModel() {
 	return dispatcher => {
 		dispatcher.on( 'element:figure', ( evt, data, conversionApi ) => {
@@ -129,7 +138,7 @@ export function viewFigureToModel() {
 			// Find an table element inside the figure element.
 			const viewTable = getViewTableFromFigure( data.viewItem );
 
-			// Do not convert if table element is absent, is missing src attribute or was already converted.
+			// Do not convert if table element is absent or was already converted.
 			if ( !viewTable || !conversionApi.consumable.test( viewTable, { name: true } ) ) {
 				return;
 			}
@@ -145,42 +154,18 @@ export function viewFigureToModel() {
 				return;
 			}
 
-			// Convert rest of the figure element's children as an table children.
-			conversionApi.convertChildren( data.viewItem, modelTable );
+			// Consume the figure view element.
+			if ( !conversionApi.consumable.consume( data.viewItem, { name: true, classes: 'table' } ) ) {
+				return;
+			}
 
+			conversionApi.convertChildren( data.viewItem, conversionApi.writer.createPositionAt( modelTable, 'end' ) );
 			conversionApi.updateConversionResult( modelTable, data );
 		} );
 	};
 }
 
-export function viewCaptionToModel() {
-	return dispatcher => {
-		dispatcher.on( 'element:caption', ( evt, data, { writer, mapper } ) => {
-			const viewItem = data.viewItem;
-			const parent = viewItem.parent;
-
-			if ( parent.name !== 'table' ) {
-				return;
-			}
-
-			const position = data.modelCursor;
-
-			const modelElement = writer.createElement( 'caption' );
-			const atTheEnd = writer.createPositionAfter( position );
-
-			writer.insert( atTheEnd, modelElement );
-			mapper.bindElements( modelElement, viewItem );
-		} );
-	};
-}
-
-export function last( iterable ) {
-	const items = Array.from( iterable );
-
-	return items[ items.length - 1 ];
-}
-
-export function getViewTableFromFigure( figureView ) {
+function getViewTableFromFigure( figureView ) {
 	if ( figureView.is( 'element', 'table' ) ) {
 		return figureView;
 	}
