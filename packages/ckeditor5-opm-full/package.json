@@ -1,7 +1,7 @@
 {
-  "name": "@ckeditor/ckeditor5-build-classic",
+  "name": "@ckeditor/ckeditor5-opm-full",
   "version": "26.0.0",
-  "description": "The classic editor build of CKEditor 5 – the best browser-based rich text editor.",
+  "description": "The build of CKEditor 5 – full by opm.",
   "keywords": [
     "ckeditor5-build",
     "ckeditor",
@@ -74,6 +74,8 @@
   },
   "scripts": {
     "build": "webpack --mode production",
+    "install": "npm run build",
+    "prepare": "npm run build",
     "preversion": "npm run build"
   }
 }
